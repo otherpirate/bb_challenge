@@ -1,16 +1,22 @@
 from collections import OrderedDict
 
 
+LRU_SET = 'SET'
+LRU_GET = 'GET'
+
 cached = OrderedDict()
 
 
-def lru_cache(max_size=100):
+def lru_cache(typo, max_size=100):
     def decorator(function):
-        def wrapper(key, value):
+        def wrapper(key, value=None):
             if key in cached:
-                cached.pop(key)
+                value = cached.pop(key) if typo == LRU_GET else value
 
-            function(key, value)
+            if typo == LRU_SET:
+                function(key, value)
+            elif typo == LRU_GET and not value:
+                value = function(key)
 
             cached[key] = value
             if len(cached) > max_size:
@@ -22,6 +28,12 @@ def lru_cache(max_size=100):
     return decorator
 
 
-@lru_cache(max_size=2)
+@lru_cache(typo=LRU_SET, max_size=2)
 def set_cache_key(key, value):
-    pass
+    print 'Saving in database...'
+
+
+@lru_cache(typo=LRU_GET, max_size=2)
+def get_cache_key(key):
+    print '{} not in cached, loading from database...'.format(key)
+    return 'Value from database to key {}'.format(key)
